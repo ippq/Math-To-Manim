@@ -36,6 +36,19 @@ def find_scene_mp4(scene_name: str, media_root: Path | None = None) -> Path | No
     return None
 
 
+def find_scene_png(scene_name: str, media_root: Path | None = None) -> Path | None:
+    """Newest `-s` (save_last_frame) PNG for a scene, searching media/images/."""
+    root = media_root or (REPO_ROOT / "media" / "images")
+    if not root.exists():
+        return None
+    candidates = sorted(
+        root.rglob(f"{scene_name}.png"),
+        key=lambda p: (p.stat().st_mtime_ns, p.as_posix()),
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
 def resolve_source(target: str) -> tuple[Path, Path]:
     """Map a run id or mp4 path to (mp4_path, default_output_path)."""
     as_path = Path(target)

@@ -38,12 +38,20 @@ def _cmd_run(args: argparse.Namespace) -> int:
     if args.gif:
         renders = manifest.get("renders") or []
         rendered_ok = bool(renders) and renders[-1].get("exit_code") == 0
-        if rendered_ok:
-            from mythos.gifs import make_gif
-            make_gif(manifest["run_id"], fps=args.gif_fps, width=args.gif_width)
-        else:
+        if not rendered_ok:
             print("  [mythos] --gif skipped: no successful render to convert",
                   file=sys.stderr)
+        elif manifest.get("medium") == "image":
+            from mythos.gifs import find_scene_png
+            png = find_scene_png(manifest["scene_name"])
+            if png:
+                print(f"  [mythos] image ready -> {png}")
+            else:
+                print("  [mythos] --gif skipped: medium is 'image' but no "
+                      "PNG found", file=sys.stderr)
+        else:
+            from mythos.gifs import make_gif
+            make_gif(manifest["run_id"], fps=args.gif_fps, width=args.gif_width)
     return 0
 
 
@@ -113,9 +121,11 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--offline", action="store_true")
     run.add_argument("--max-repairs", type=int, default=3)
     run.add_argument("--gif", action="store_true",
-                     help="after a successful --render, convert the mp4 to a "
-                          "palette-optimized GIF automatically (same recipe "
-                          "as the `gif` subcommand)")
+                     help="after a successful --render, produce the final "
+                          "embeddable asset automatically: a palette-"
+                          "optimized GIF if medium was 'gif' (same recipe as "
+                          "the `gif` subcommand), or just report the PNG "
+                          "path if medium was 'image' (nothing to convert)")
     run.add_argument("--gif-fps", type=int, default=12)
     run.add_argument("--gif-width", type=int, default=640)
     run.set_defaults(func=_cmd_run)

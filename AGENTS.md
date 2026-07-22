@@ -17,8 +17,8 @@ Do not route one provider through the other provider's orchestration layer.
 |---|---|
 | `sol/` | Independent GPT-5.6 Sol silo: Codex CLI driver, film contract, harness, validation, run ledger |
 | `docs/SOL_5_6_SILO.md` | Sol architecture and deployment contract |
-| `mythos/agents/*.md` | The six agent charters (single source of truth; mirror to `.claude/agents/` for native Claude Code use) |
-| `mythos/harness.py` | Chain runner: intent → cartographer → curriculum → math-director → cinematographer → scene-composer → codegen → verify → render → repair |
+| `mythos/agents/mythos-visual-brief.md` | The single agent charter (single source of truth; mirror to `.claude/agents/` for native Claude Code use) |
+| `mythos/harness.py` | Chain runner: visual-brief → codegen → verify → render → repair |
 | `mythos/charter.py` | The Cinematic Charter + parsing utilities |
 | `mythos/backends.py` | Model backends: Claude CLI (default), Codex CLI, OpenAI-compatible HTTP |
 | `mythos/cinematography.py` | The visual grammar library scenes import |

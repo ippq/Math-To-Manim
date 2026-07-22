@@ -1,18 +1,16 @@
-"""Mythos harness: the 6-agent reasoning chain, driven through Claude Fable 5.
+"""Mythos harness: a minimal atom-illustration chain, driven through Claude Fable 5.
 
-The agent charters live in ``mythos/agents/*.md`` (mirrored to
-``.claude/agents/`` for native Claude Code use). This harness reads those
-same charters and drives them headlessly through the configured model
-backend, so interactive sessions and automated runs share one source of
-truth.
+The agent charter lives in ``mythos/agents/mythos-visual-brief.md`` (mirrored
+to ``.claude/agents/`` for native Claude Code use). This harness reads that
+charter and drives it headlessly through the configured model backend, so
+interactive sessions and automated runs share one source of truth.
 
 Chain:
-    intent -> cartographer -> curriculum -> math-director
-           -> cinematographer -> scene-composer -> [codegen -> verify -> render]
+    visual-brief -> [codegen -> verify -> render]
 
-Each reasoning stage receives the prior artifact JSON and must return one
-JSON object. Codegen returns a complete Manim CE file inside one fenced
-python block. Artifacts land in ``runs/mythos/<timestamp>-<slug>/``.
+One reasoning stage decides medium ("image" or "gif") and specifies exactly
+what goes on screen; codegen turns that into a complete Manim CE file inside
+one fenced python block. Artifacts land in ``runs/mythos/<timestamp>-<slug>/``.
 
 Usage (from repo root):
     python -m mythos.harness "explain quantum field theory" --render -q m
@@ -64,12 +62,7 @@ AGENT_DIRS = [
 
 #: (slug, agent definition file, artifact name)
 STAGES: list[tuple[str, str, str]] = [
-    ("intent", "mythos-intent.md", "01_intent.json"),
-    ("cartographer", "mythos-cartographer.md", "02_knowledge_map.json"),
-    ("curriculum", "mythos-curriculum.md", "03_curriculum.json"),
-    ("math-director", "mythos-math-director.md", "04_math_dossier.json"),
-    ("cinematographer", "mythos-cinematographer.md", "05_shot_list.json"),
-    ("scene-composer", "mythos-scene-composer.md", "06_scene_spec.json"),
+    ("visual-brief", "mythos-visual-brief.md", "01_visual_brief.json"),
 ]
 
 _LINT_RULES = [
@@ -89,28 +82,32 @@ def validate_stage_artifact(slug: str, artifact: dict) -> str | None:
     """Reject degenerate stage output before it poisons the chain.
 
     Returns a human-readable problem description, or None when healthy.
-    (A real failure mode: the math-director once returned
+    (A real failure mode: the old math-director stage once returned
     ``{"formulas": [], "color_identity": {}, "numbers": []}`` — 48 bytes —
     and every downstream agent faithfully storyboarded an empty film.)
     """
     if not isinstance(artifact, dict) or not artifact:
         return "artifact is not a non-empty JSON object"
     size = len(json.dumps(artifact))
-    if slug == "math-director":
+    if slug == "visual-brief":
         formulas = artifact.get("formulas")
         if isinstance(formulas, list) and not formulas:
-            return "math dossier has an empty 'formulas' list"
-        if size < 500:
-            return f"math dossier is only {size} bytes"
-    elif slug == "cinematographer":
-        shots = artifact.get("shots")
-        # Catches a genuinely near-empty artifact, not a legitimately tight
-        # short film: with the shot-count guidance in mythos-cinematographer
-        # (~1 shot per 3-5s), a 15s film can be as few as 3 shots.
-        if isinstance(shots, list) and len(shots) < 3:
-            return f"shot list has only {len(shots)} beats"
-        if size < 500:
-            return f"shot list is only {size} bytes"
+            return "visual brief has an empty 'formulas' list"
+        medium = artifact.get("medium")
+        if medium == "gif":
+            shots = artifact.get("shots")
+            # Catches a genuinely near-empty artifact, not a legitimately
+            # tight short gif: ~1 shot per 3-5s, so a 15s gif can be as few
+            # as 3 shots.
+            if isinstance(shots, list) and len(shots) < 3:
+                return f"gif shot list has only {len(shots)} beats"
+        elif medium == "image":
+            if not artifact.get("composition"):
+                return "image medium but 'composition' is missing/empty"
+        else:
+            return f"medium is {medium!r}, expected 'image' or 'gif'"
+        if size < 300:
+            return f"visual brief is only {size} bytes"
     elif size < 200:
         return f"artifact is only {size} bytes"
     return None
@@ -151,7 +148,7 @@ def resolve_manim() -> list[str]:
 
 
 class MythosHarness:
-    """Runs the full chain: six reasoning stages, codegen, verify, render, repair."""
+    """Runs the full chain: one reasoning stage, codegen, verify, render, repair."""
 
     def __init__(
         self,
@@ -318,7 +315,8 @@ class MythosHarness:
             attempt = 0
             while True:
                 if ok:
-                    rc, out = self._render(code_path, scene_name, quality)
+                    rc, out = self._render(code_path, scene_name, quality,
+                                           medium=manifest.get("medium", "gif"))
                     manifest.setdefault("renders", []).append(
                         {"attempt": attempt, "exit_code": rc})
                     if rc == 0:
@@ -399,23 +397,37 @@ class MythosHarness:
         if self.offline:
             code = _OFFLINE_SCENE
         else:
-            dossier = {
-                name: json.loads((run_dir / name).read_text(encoding="utf-8"))
-                for _, _, name in STAGES if (run_dir / name).exists()
-            }
+            medium = scene_spec.get("medium", "image")
+            if medium == "image":
+                medium_instructions = (
+                    "MEDIUM: static image. Build the single frame with\n"
+                    "self.add(...) only — no self.play, no camera movement, no\n"
+                    "waits beyond what's needed for LaTeX to typeset. This file\n"
+                    "will be rendered with `manim -s` (save last frame only), so\n"
+                    "everything must be on screen and in its final state by the\n"
+                    "end of construct()."
+                )
+            else:
+                medium_instructions = (
+                    "MEDIUM: short gif. Implement the 'shots' list as a short\n"
+                    "Scene using self.play/self.wait per shot, following the\n"
+                    "Cinematic Charter's camera and caption grammar. Total\n"
+                    "runtime must match the sum of the shots' 'seconds' fields,\n"
+                    "+/- 15%."
+                )
             codegen_prompt = (
-                "You are the Mythos scene composer's hands: write the film.\n"
-                "Using the full dossier below (intent through scene spec), write ONE\n"
-                "complete, runnable Manim Community Edition Python file that\n"
-                "implements the shot list with the full Cinematic Charter — headlines\n"
-                "before symbols, camera zooms into terms, plain-language captions,\n"
-                "Mythos palette. The file must be self-contained (inline any helpers),\n"
-                "import `from manim import *`, and define exactly one ThreeDScene\n"
-                "subclass. Respond with exactly one fenced python block and nothing\n"
-                "else.\n\nDOSSIER JSON:\n" + json.dumps(dossier, indent=2)
+                "You are the code-generation stage: turn one visual brief into\n"
+                "a complete, runnable Manim Community Edition Python file.\n\n"
+                + medium_instructions + "\n\n"
+                "The file must be self-contained (inline any helpers), import\n"
+                "`from manim import *`, and define exactly one Scene subclass\n"
+                "(ThreeDScene only if 3D is genuinely needed, otherwise plain\n"
+                "Scene). Respond with exactly one fenced python block and\n"
+                "nothing else.\n\nVISUAL BRIEF JSON:\n"
+                + json.dumps(scene_spec, indent=2)
             )
             raw = self._model(codegen_prompt, system_extra=CINEMATIC_CHARTER)
-            (run_dir / "07_codegen.raw.txt").write_text(raw, encoding="utf-8")
+            (run_dir / "02_codegen.raw.txt").write_text(raw, encoding="utf-8")
             code = extract_python_block(raw)
         code_path = run_dir / "mythos_scene.py"
         code_path.write_text(code, encoding="utf-8")
@@ -423,6 +435,7 @@ class MythosHarness:
         manifest["stages"].append(
             {"stage": "codegen", "artifact": "mythos_scene.py",
              "seconds": round(time.time() - started, 2)})
+        manifest["medium"] = scene_spec.get("medium", "image")
         self._write_manifest(run_dir, manifest)
         print(f"  [mythos] codegen          -> mythos_scene.py ({scene_name})")
         return code_path, scene_name
@@ -454,8 +467,11 @@ class MythosHarness:
         return True, None
 
     def _render(self, code_path: Path, scene_name: str,
-                quality: str) -> tuple[int, str]:
-        cmd = resolve_manim() + [f"-q{quality}", str(code_path), scene_name]
+                quality: str, medium: str = "gif") -> tuple[int, str]:
+        # -s (save_last_frame): no video encode, just the final frame as a
+        # PNG — the cheap, fast path for the "image" medium.
+        flags = ["-s"] if medium == "image" else []
+        cmd = resolve_manim() + flags + [f"-q{quality}", str(code_path), scene_name]
         print(f"  [mythos] rendering: {' '.join(cmd)}")
         try:
             completed = subprocess.run(
@@ -530,14 +546,16 @@ def _offline_artifact(slug: str, prompt: str, prior: dict) -> dict:
     """Deterministic stand-ins so the chain runs without a CLI login."""
     base = {"stage": slug, "topic": prompt, "offline": True,
             "prior_keys": sorted(prior)}
-    if slug == "cinematographer":
+    if slug == "visual-brief":
+        base["medium"] = "gif"
+        base["formulas"] = [
+            {"id": "f1", "latex_parts": ["e^{i\\pi}", "+1=0"], "color": "coral"},
+        ]
         base["shots"] = [
             {"beat": 1, "move": "HEADLINE", "text": "A deterministic rehearsal."},
             {"beat": 2, "move": "ZOOM_IN", "target": "formula"},
             {"beat": 3, "move": "PULL_BACK"},
         ]
-    if slug == "scene-composer":
-        base["scene_name"] = "MythosOfflineScene"
     return base
 
 

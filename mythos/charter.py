@@ -48,16 +48,15 @@ MYTHOS CINEMATIC CHARTER — the generated scene MUST obey all of it.
 7. CRAFT. Build formulas from multi-argument MathTex so terms are
    addressable; use glow layers (stroke copies) for emphasis; LaggedStart
    for ensembles; no external assets, file IO, or network. Manim CE 0.19+.
-8. SHORT AND SUPPLEMENTARY, BY DEFAULT. This film accompanies a written
+8. THE CHEAPEST FAITHFUL OPTION WINS. This accompanies a written
    first-principles text (a "knowledge atom") that already contains the
-   full derivation, in prose, with citations and edge cases. The film's
-   only job is showing the ONE spatial/visual mechanism the prose can't
-   convey — not re-teaching the argument end to end. Treat the intent
-   brief's duration_seconds as a hard ceiling, never a floor: when in
-   doubt, cut a shot rather than add one, cut an act rather than add one,
-   and end the instant the visual point has landed. This rule applies
-   unless the user's own prompt explicitly asks for a longer, full
-   cinematic piece.
+   full derivation, in prose, with citations and edge cases. Its only job
+   is showing the ONE spatial/visual mechanism the prose can't convey —
+   not re-teaching the argument end to end, and not narrating an act
+   structure. Default to a single static image; reach for a short GIF
+   (shots summing to <= 30 seconds) only when the mechanism genuinely
+   involves motion a still frame cannot show. When in doubt, cut a shot
+   rather than add one, and end the instant the visual point has landed.
 """
 
 #: Appended to every reasoning-stage prompt so agents return machine-readable JSON.

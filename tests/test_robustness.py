@@ -25,43 +25,63 @@ from mythos.harness import (
 # Stage validation                                                       #
 # --------------------------------------------------------------------- #
 
-def test_empty_math_dossier_rejected():
-    # The exact degenerate artifact from run 20260710-014407.
-    artifact = {"formulas": [], "color_identity": {}, "numbers": []}
-    problem = validate_stage_artifact("math-director", artifact)
+def test_empty_formulas_rejected():
+    # The exact shape of a real degenerate artifact: empty formulas list.
+    artifact = {"medium": "image", "formulas": [], "composition": "a circle"}
+    problem = validate_stage_artifact("visual-brief", artifact)
     assert problem is not None
     assert "formulas" in problem
 
 
-def test_thin_shot_list_rejected():
-    artifact = {"shots": [{"beat": i} for i in range(2)], "camera_score": "x"}
-    problem = validate_stage_artifact("cinematographer", artifact)
+def test_thin_gif_shot_list_rejected():
+    artifact = {"medium": "gif", "formulas": [{"id": "f1"}],
+                "shots": [{"beat": i} for i in range(2)]}
+    problem = validate_stage_artifact("visual-brief", artifact)
     assert problem is not None
     assert "2 beats" in problem
 
 
-def test_tight_short_shot_list_not_rejected_by_count():
-    # A legitimately tight ~15s film per the atom-companion shot-count
-    # guidance (~1 shot per 3-5s) should NOT be treated as degenerate.
-    shots = {"shots": [{"beat": i, "verb": "HEADLINE", "seconds": 3.0,
-                        "params": {"zoom": 1}, "caption_text": "x" * 40}
-                       for i in range(4)]}
-    assert validate_stage_artifact("cinematographer", shots) is None
+def test_tight_short_gif_shot_list_not_rejected_by_count():
+    # A legitimately tight ~15s gif (~1 shot per 3-5s) should NOT be
+    # treated as degenerate.
+    artifact = {"medium": "gif", "formulas": [{"id": "f1"}],
+                "shots": [{"beat": i, "verb": "HEADLINE", "seconds": 3.0,
+                          "caption_text": "x" * 40} for i in range(4)]}
+    assert validate_stage_artifact("visual-brief", artifact) is None
 
 
-def test_healthy_artifacts_pass():
-    dossier = {"formulas": [{"id": f"f{i}", "latex": "E=mc^2",
-                             "caption": "energy and mass trade places" * 3}
-                            for i in range(12)],
-               "numbers": [1, 2, 3]}
-    assert validate_stage_artifact("math-director", dossier) is None
-    shots = {"shots": [{"beat": i, "verb": "HEADLINE", "seconds": 1.0,
-                        "params": {"zoom": 1}} for i in range(30)]}
-    assert validate_stage_artifact("cinematographer", shots) is None
+def test_image_medium_missing_composition_rejected():
+    artifact = {"medium": "image", "formulas": [{"id": "f1"}], "composition": ""}
+    problem = validate_stage_artifact("visual-brief", artifact)
+    assert problem is not None
+    assert "composition" in problem
+
+
+def test_unrecognized_medium_rejected():
+    artifact = {"medium": "video", "formulas": [{"id": "f1"}]}
+    problem = validate_stage_artifact("visual-brief", artifact)
+    assert problem is not None
+    assert "medium" in problem
+
+
+def test_healthy_image_artifact_passes():
+    artifact = {"medium": "image",
+                "formulas": [{"id": "f1", "latex": "E=mc^2"}],
+                "composition": "a single labeled arrow on a coordinate "
+                               "grid, coral for the vector, gray axes" * 3}
+    assert validate_stage_artifact("visual-brief", artifact) is None
+
+
+def test_healthy_gif_artifact_passes():
+    artifact = {"medium": "gif",
+                "formulas": [{"id": "f1", "latex": "E=mc^2"}],
+                "shots": [{"beat": i, "verb": "HEADLINE", "seconds": 5.0,
+                          "caption_text": "x" * 40} for i in range(5)]}
+    assert validate_stage_artifact("visual-brief", artifact) is None
 
 
 def test_non_dict_artifact_rejected():
-    assert validate_stage_artifact("intent", {}) is not None
+    assert validate_stage_artifact("visual-brief", {}) is not None
 
 
 def test_degenerate_stage_retries_then_aborts(tmp_path, monkeypatch):
@@ -70,25 +90,26 @@ def test_degenerate_stage_retries_then_aborts(tmp_path, monkeypatch):
 
     def fake_model(prompt, system_extra=None):
         calls.append(prompt)
-        return '{"formulas": [], "color_identity": {}, "numbers": []}'
+        return '{"medium": "image", "formulas": [], "composition": "x"}'
 
     monkeypatch.setattr(harness, "_model", fake_model)
     monkeypatch.setattr(harness, "load_charter", lambda f: "CHARTER")
     with pytest.raises(StageValidationError):
-        harness._run_stage("math-director", "mythos-math-director.md",
+        harness._run_stage("visual-brief", "mythos-visual-brief.md",
                            {"prior": "artifact"}, tmp_path,
-                           "04_math_dossier.json")
+                           "01_visual_brief.json")
     assert len(calls) == 2                       # one retry, then abort
     assert "PREVIOUS ATTEMPT REJECTED" in calls[1]
-    assert (tmp_path / "04_math_dossier.retry.raw.txt").exists()
+    assert (tmp_path / "01_visual_brief.retry.raw.txt").exists()
 
 
 def test_degenerate_stage_recovers_on_retry(tmp_path, monkeypatch):
     harness = MythosHarness(offline=False, runs_dir=tmp_path)
     healthy = json.dumps({
-        "formulas": [{"id": f"f{i}", "latex": "x", "story": "y" * 40}
-                     for i in range(10)]})
-    responses = iter(['{"formulas": []}', healthy])
+        "medium": "image",
+        "formulas": [{"id": "f1", "latex": "x"}],
+        "composition": "y" * 320})
+    responses = iter(['{"medium": "image", "formulas": []}', healthy])
 
     def fake_model(prompt, system_extra=None):
         return next(responses)
@@ -96,10 +117,10 @@ def test_degenerate_stage_recovers_on_retry(tmp_path, monkeypatch):
     monkeypatch.setattr(harness, "_model", fake_model)
     monkeypatch.setattr(harness, "load_charter", lambda f: "CHARTER")
     artifact, retried = harness._run_stage(
-        "math-director", "mythos-math-director.md", {}, tmp_path,
-        "04_math_dossier.json")
+        "visual-brief", "mythos-visual-brief.md", {}, tmp_path,
+        "01_visual_brief.json")
     assert retried is True
-    assert len(artifact["formulas"]) == 10
+    assert len(artifact["formulas"]) == 1
 
 
 # --------------------------------------------------------------------- #

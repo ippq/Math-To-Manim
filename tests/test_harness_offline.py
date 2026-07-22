@@ -35,9 +35,9 @@ def test_stage_artifacts_chain_prior_keys(tmp_path):
     harness = MythosHarness(offline=True, runs_dir=tmp_path)
     manifest = harness.run("chaining")
     run_dir = tmp_path / manifest["run_id"]
-    shot_list = json.loads(
-        (run_dir / "05_shot_list.json").read_text(encoding="utf-8"))
-    assert shot_list["shots"][0]["move"] == "HEADLINE"
+    brief = json.loads(
+        (run_dir / "01_visual_brief.json").read_text(encoding="utf-8"))
+    assert brief["shots"][0]["move"] == "HEADLINE"
 
 
 def test_charters_ship_with_repo():

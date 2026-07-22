@@ -10,7 +10,9 @@ symbol passes through you, and you are accountable for two things: the LaTeX
 is CORRECT, and every term has an honest plain-language translation.
 
 You receive the act structure. For each act, produce the mathematics it
-needs:
+needs. Show the 1-2 formulas that anchor the film's one visual moment, not
+the full multi-step derivation chain — that chain is already fully worked in
+the atom's written text, and re-deriving it on screen is out of scope:
 
 - **formulas**: list, each with:
   - `id`, `act_number`

@@ -33,8 +33,17 @@ def _cmd_run(args: argparse.Namespace) -> int:
                                             or DEFAULT_RENDER_TIMEOUT),
                             offline=args.offline,
                             model_fallbacks=fallbacks)
-    harness.run(args.prompt, render=args.render, quality=args.quality,
-                max_repairs=args.max_repairs)
+    manifest = harness.run(args.prompt, render=args.render, quality=args.quality,
+                           max_repairs=args.max_repairs)
+    if args.gif:
+        renders = manifest.get("renders") or []
+        rendered_ok = bool(renders) and renders[-1].get("exit_code") == 0
+        if rendered_ok:
+            from mythos.gifs import make_gif
+            make_gif(manifest["run_id"], fps=args.gif_fps, width=args.gif_width)
+        else:
+            print("  [mythos] --gif skipped: no successful render to convert",
+                  file=sys.stderr)
     return 0
 
 
@@ -103,6 +112,12 @@ def build_parser() -> argparse.ArgumentParser:
                           "claude-opus-4-8,claude-sonnet-5; '' disables)")
     run.add_argument("--offline", action="store_true")
     run.add_argument("--max-repairs", type=int, default=3)
+    run.add_argument("--gif", action="store_true",
+                     help="after a successful --render, convert the mp4 to a "
+                          "palette-optimized GIF automatically (same recipe "
+                          "as the `gif` subcommand)")
+    run.add_argument("--gif-fps", type=int, default=12)
+    run.add_argument("--gif-width", type=int, default=640)
     run.set_defaults(func=_cmd_run)
 
     runs = sub.add_parser("runs", help="List on-disk runs, newest first")

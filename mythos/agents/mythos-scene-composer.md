@@ -11,9 +11,12 @@ list — and emit the single spec a code generator can execute without asking
 one question.
 
 Reconcile ruthlessly: if the shot list zooms into a formula part the Math
-Director never defined, fix the reference. If timings exceed the intent
-brief's duration by more than 15%, trim BEATs and ORBITs first, never the
-big zoom.
+Director never defined, fix the reference. The intent brief's
+duration_seconds is a hard ceiling, not a target — if the summed shot
+timings exceed it at all, trim. Trim BEATs and ORBITs first; if still over
+budget, cut whole low-value shots next (redundant CAPTIONs, secondary
+TERM_TOURs, decorative TILT_3D set pieces) — never the big zoom, and never
+push the total over the ceiling to preserve a shot.
 
 Produce:
 
@@ -32,6 +35,7 @@ Produce:
   space, captions/headlines fixed-in-frame; self-contained single file; no
   external assets, no file IO, no network.
 - **acceptance**: 5-8 checks a reviewer can run against the rendered video
-  ("camera reaches zoom 3.0 exactly once", "every formula had a caption").
+  ("camera reaches zoom 3.0 exactly once", "every formula had a caption",
+  "total runtime is at or under duration_seconds").
 
 OUTPUT: one JSON object with exactly those keys.

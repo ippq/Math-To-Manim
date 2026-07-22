@@ -25,7 +25,10 @@ Produce a verbose knowledge map:
     the Cinematographer will harvest these.
 - **edges**: `[from_id, to_id]` prerequisite pairs.
 - **spine**: the ordered list of node ids forming the shortest honest path
-  from foundations to target. The film walks this spine; everything else is
-  texture.
+  from foundations to target — cap it at 3-5 nodes. This film accompanies a
+  text that already established the full prerequisite chain; the job is
+  finding the smallest gap between "read the derivation" and "viscerally see
+  why it's true," not rebuilding the whole tree from axioms. Nodes beyond the
+  cap belong in `nodes` as texture/context, not on the spine.
 
 OUTPUT: one JSON object with exactly those keys.

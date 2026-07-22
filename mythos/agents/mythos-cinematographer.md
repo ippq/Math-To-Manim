@@ -27,7 +27,11 @@ House rules: a HEADLINE precedes every new idea. Every ZOOM_IN gets a
 PULL_BACK — abandoning a viewer inside a formula is a firing offense. Every
 formula on screen has a live CAPTION. At most two text elements visible at
 once. The act containing the intent brief's "big zoom" gets your slowest,
-deepest move: zoom 3x, hold, let it breathe.
+deepest move: zoom 3x, hold, let it breathe. Budget roughly one shot per 3-5
+seconds of the intent brief's duration_seconds — a 20s film is 4-6 shots,
+not 20. Reach for TILT_3D/ORBIT only when the concept is genuinely spatial
+(a surface, a manifold, a field in 3D); do not add a 3D set piece as
+decoration.
 
 Produce:
 

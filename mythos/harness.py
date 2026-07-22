@@ -104,7 +104,10 @@ def validate_stage_artifact(slug: str, artifact: dict) -> str | None:
             return f"math dossier is only {size} bytes"
     elif slug == "cinematographer":
         shots = artifact.get("shots")
-        if isinstance(shots, list) and len(shots) < 8:
+        # Catches a genuinely near-empty artifact, not a legitimately tight
+        # short film: with the shot-count guidance in mythos-cinematographer
+        # (~1 shot per 3-5s), a 15s film can be as few as 3 shots.
+        if isinstance(shots, list) and len(shots) < 3:
             return f"shot list has only {len(shots)} beats"
         if size < 500:
             return f"shot list is only {size} bytes"

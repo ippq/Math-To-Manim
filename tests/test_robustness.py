@@ -34,10 +34,19 @@ def test_empty_math_dossier_rejected():
 
 
 def test_thin_shot_list_rejected():
-    artifact = {"shots": [{"beat": i} for i in range(5)], "camera_score": "x"}
+    artifact = {"shots": [{"beat": i} for i in range(2)], "camera_score": "x"}
     problem = validate_stage_artifact("cinematographer", artifact)
     assert problem is not None
-    assert "5 beats" in problem
+    assert "2 beats" in problem
+
+
+def test_tight_short_shot_list_not_rejected_by_count():
+    # A legitimately tight ~15s film per the atom-companion shot-count
+    # guidance (~1 shot per 3-5s) should NOT be treated as degenerate.
+    shots = {"shots": [{"beat": i, "verb": "HEADLINE", "seconds": 3.0,
+                        "params": {"zoom": 1}, "caption_text": "x" * 40}
+                       for i in range(4)]}
+    assert validate_stage_artifact("cinematographer", shots) is None
 
 
 def test_healthy_artifacts_pass():

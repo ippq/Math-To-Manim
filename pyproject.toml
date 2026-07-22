@@ -5,31 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "math-to-manim"
 version = "1.1.0"
-description = "Ask a question -> get a freakin' movie. The Mythos 6-agent chain turns one sentence into a cinematic Manim film, with a REST API and MCP server."
-readme = "README.md"
+description = "Ask a question -> get one companion image or short GIF for a knowledge atom."
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Christian H. Cooper" }]
-keywords = ["manim", "animation", "mathematics", "claude", "mcp", "agents"]
-dependencies = [
-  "pydantic>=2,<3",
-]
+keywords = ["manim", "animation", "mathematics", "claude"]
+dependencies = []
 
 [project.optional-dependencies]
-dev = [
-  "pytest>=8",
-  "httpx>=0.27",
-  "fastapi>=0.110",
-  "uvicorn>=0.29",
-  "mcp>=1.2",
-]
-api = [
-  "fastapi>=0.110",
-  "uvicorn>=0.29",
-]
-mcp = [
-  "mcp>=1.2",
-]
 render = [
   "manim>=0.19",
 ]
@@ -37,20 +20,13 @@ render = [
 [project.scripts]
 math-to-manim = "mythos.cli:main"
 m2m = "mythos.cli:main"
-math-to-manim-sol = "sol.cli:main"
-m2m-sol = "sol.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/HarleyCoops/Math-To-Manim"
-Repository = "https://github.com/HarleyCoops/Math-To-Manim"
+Homepage = "https://github.com/ippq/Math-To-Manim"
+Repository = "https://github.com/ippq/Math-To-Manim"
 
 [tool.setuptools.packages.find]
-include = ["mythos*", "sol*"]
+include = ["mythos*"]
 
 [tool.setuptools.package-data]
 mythos = ["agents/*.md"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
-addopts = "-q"

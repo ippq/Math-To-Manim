@@ -12,14 +12,11 @@ One reasoning stage decides medium ("image" or "gif") and specifies exactly
 what goes on screen; codegen turns that into a complete Manim CE file inside
 one fenced python block. Artifacts land in ``runs/mythos/<timestamp>-<slug>/``.
 
-Usage (from repo root):
-    python -m mythos.harness "explain quantum field theory" --render -q m
-    python -m mythos.harness "the heat equation" --offline      # no API needed
+The actual entry point is the ``math-to-manim`` command (``mythos.cli``).
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import py_compile
@@ -578,29 +575,3 @@ class MythosOfflineScene(ThreeDScene):
         self.move_camera(frame_center=ORIGIN, zoom=1.0, run_time=1.0)
         self.play(FadeOut(formula), FadeOut(title))
 '''
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run the Mythos 6-agent chain.")
-    parser.add_argument("prompt", help="What should the film explain?")
-    parser.add_argument("--render", action="store_true", help="Render after codegen")
-    parser.add_argument("-q", "--quality", default="l", choices=list("lmhpk"))
-    parser.add_argument("--model", default=DEFAULT_MODEL)
-    parser.add_argument("--command", default=DEFAULT_COMMAND,
-                        help="Model backend: claude (default), fugu-api, "
-                             "or another CLI executable")
-    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
-    parser.add_argument("--offline", action="store_true",
-                        help="Deterministic artifacts; no CLI calls")
-    parser.add_argument("--max-repairs", type=int, default=3)
-    args = parser.parse_args(argv)
-
-    harness = MythosHarness(command=args.command, model=args.model,
-                            timeout=args.timeout, offline=args.offline)
-    harness.run(args.prompt, render=args.render, quality=args.quality,
-                max_repairs=args.max_repairs)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

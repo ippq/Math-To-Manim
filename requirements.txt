@@ -1,2 +1,0 @@
-# Core development and offline-test environment.
--e .[dev]

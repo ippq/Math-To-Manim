@@ -1,17 +1,14 @@
-"""Math-To-Manim: ask a question -> get a freakin' movie.
+"""Math-To-Manim: ask a question -> get one companion image or short GIF.
 
-The Mythos engine turns one sentence into a cinematic Manim film through a
-6-agent reasoning chain driven by Claude Fable 5:
+A minimal fork focused on illustrating knowledge atoms: one reasoning stage
+picks a medium and specifies what goes on screen, then codegen turns that
+into a Manim scene.
 
-- ``mythos.harness``: the chain runner (intent -> ... -> scene-composer ->
-  codegen -> verify -> render -> repair)
-- ``mythos.cinematography``: the visual grammar (headlines, term zooms,
-  pull-backs, glows — the Mythos house style)
+- ``mythos.harness``: the chain runner (visual-brief -> codegen -> verify ->
+  render -> repair)
 - ``mythos.charter``: the Cinematic Charter and shared parsing utilities
-- ``mythos.backends``: model backends (Claude CLI, Codex CLI, OpenAI-compatible)
-- ``mythos.service``: job orchestration shared by every front door
-- ``mythos.api``: the REST API (FastAPI)
-- ``mythos.mcp_server``: the MCP server (FastMCP)
+- ``mythos.backends``: the Claude CLI model backend
+- ``mythos.gifs``: mp4 -> GIF conversion, and PNG lookup for image-medium runs
 - ``mythos.cli``: the ``math-to-manim`` command
 """
 
